@@ -1,85 +1,89 @@
 package br.com.zup.estrelas.clientes.service;
 
 import java.util.List;
-import java.util.Optional;
+import javax.persistence.EntityManager;
+import javax.persistence.Query;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import br.com.zup.estrelas.clientes.dto.AlteraClienteDTO;
-import br.com.zup.estrelas.clientes.dto.ClienteDTO;
 import br.com.zup.estrelas.clientes.dto.MensagemDTO;
 import br.com.zup.estrelas.clientes.entity.Cliente;
-import br.com.zup.estrelas.clientes.repository.ClienteRepository;
 
 @Service
 public class ClienteService implements IClienteService {
 
     @Autowired
-    ClienteRepository clienteRepository;
-    
-    public MensagemDTO criarCliente(ClienteDTO clienteDTO) {
+    EntityManager manager;
 
-        if (clienteRepository.existsByCpf(clienteDTO.getCpf())) {
-            return new MensagemDTO("Cliente com o CPF já cadastrado!");
-        }
-        
-        Cliente cliente = new Cliente();
-        BeanUtils.copyProperties(clienteDTO, cliente);
-        
-        clienteRepository.save(cliente);
-        
+    public MensagemDTO criarCliente(Cliente cliente) {
+
+//        Cliente clienteConsultado = manager.find(Cliente.class, cliente.getCpf());
+//
+//        if (clienteConsultado != null) {
+//            return new MensagemDTO("Cliente com o CPF já cadastrado!");
+//        }
+
+        manager.getTransaction().begin();
+        manager.persist(cliente);
+        manager.getTransaction().commit();
+
         return new MensagemDTO("Cliente adicionado com sucesso!");
     }
 
-    
+
     public MensagemDTO alterarCliente(String cpf, AlteraClienteDTO alteracao) {
 
-        Optional<Cliente> clienteBD = clienteRepository.findByCpf(cpf);
-        
-        if (clienteBD.isEmpty()) {
-            return new MensagemDTO("Operação não realizada, cliente com CPF digitado não encontrado!");
+        Cliente clienteConsultado = manager.find(Cliente.class, cpf);
+
+        if (clienteConsultado.equals(null)) {
+            return new MensagemDTO(
+                    "Operação não realizada, cliente com CPF digitado não encontrado!");
         }
-        
-        Cliente cliente = clienteBD.get();
-        
-        BeanUtils.copyProperties(alteracao, cliente);
-        
-        clienteRepository.save(cliente);
-        
-       return new MensagemDTO("Cliente alterado com sucesso!");
+
+        BeanUtils.copyProperties(alteracao, clienteConsultado);
+
+        manager.getTransaction().begin();
+        manager.merge(clienteConsultado);
+        manager.getTransaction().commit();
+
+        return new MensagemDTO("Cliente alterado com sucesso!");
     }
 
-    
+
     public List<Cliente> ListarClientes() {
-        
-        List<Cliente> clientes = (List<Cliente>) clienteRepository.findAll();
+
+        Query query = manager.createQuery("select c from Cliente c");
+
+        List<Cliente> clientes = query.getResultList();
         return clientes;
     }
 
-    
+
     public Cliente consultarCliente(String cpf) {
 
-        Optional<Cliente> clienteConsultado = clienteRepository.findByCpf(cpf);
-        
-        if (clienteConsultado.isEmpty()) {
+        Cliente clienteConsultado = manager.find(Cliente.class, cpf);
+
+        if (clienteConsultado.equals(null)) {
             return new Cliente();
         }
 
-        Cliente cliente = clienteConsultado.get();
-        
-        return cliente;
+        return clienteConsultado;
     }
 
     public MensagemDTO excluirCliente(String cpf) {
+        Cliente clienteARemover = manager.find(Cliente.class, cpf);
 
-        if (clienteRepository.existsByCpf(cpf)) {
-            
-            clienteRepository.deleteByCpf(cpf);
-            
-            return new MensagemDTO("Cliente excluído com sucesso!");
+        if (clienteARemover.equals(null)) {
+            return new MensagemDTO(
+                    "Operação não realizada, cliente com CPF digitado não encontrado!");
         }
         
-        return new MensagemDTO("Operação não realizada, cliente com CPF digitado não encontrado!");
+        manager.getTransaction().begin();
+        manager.remove(clienteARemover);
+        manager.getTransaction().commit();
+
+        return new MensagemDTO("Cliente excluído com sucesso!");
     }
 
 }

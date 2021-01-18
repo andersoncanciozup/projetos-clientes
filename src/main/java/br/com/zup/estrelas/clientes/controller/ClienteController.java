@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import br.com.zup.estrelas.clientes.dto.AlteraClienteDTO;
-import br.com.zup.estrelas.clientes.dto.ClienteDTO;
 import br.com.zup.estrelas.clientes.dto.MensagemDTO;
 import br.com.zup.estrelas.clientes.entity.Cliente;
 import br.com.zup.estrelas.clientes.service.IClienteService;
@@ -26,7 +25,7 @@ public class ClienteController {
     IClienteService clienteService;
     
     @PostMapping(produces = { MediaType.APPLICATION_JSON_VALUE })
-    public MensagemDTO criarCliente(@RequestBody ClienteDTO cliente) {
+    public MensagemDTO criarCliente(@RequestBody Cliente cliente) {
         return clienteService.criarCliente(cliente);
     }
     
