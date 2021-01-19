@@ -6,6 +6,7 @@ import javax.persistence.Query;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import br.com.zup.estrelas.clientes.dto.AlteraClienteDTO;
 import br.com.zup.estrelas.clientes.dto.MensagemDTO;
 import br.com.zup.estrelas.clientes.entity.Cliente;
@@ -16,22 +17,21 @@ public class ClienteService implements IClienteService {
     @Autowired
     EntityManager manager;
 
+    @Transactional
     public MensagemDTO criarCliente(Cliente cliente) {
 
-//        Cliente clienteConsultado = manager.find(Cliente.class, cliente.getCpf());
-//
-//        if (clienteConsultado != null) {
-//            return new MensagemDTO("Cliente com o CPF já cadastrado!");
-//        }
+        Cliente clienteConsultado = manager.find(Cliente.class, cliente.getCpf());
 
-        manager.getTransaction().begin();
+        if (clienteConsultado != null) {
+            return new MensagemDTO("Cliente com o CPF já cadastrado!");
+        }
+
         manager.persist(cliente);
-        manager.getTransaction().commit();
 
         return new MensagemDTO("Cliente adicionado com sucesso!");
     }
 
-
+    @Transactional
     public MensagemDTO alterarCliente(String cpf, AlteraClienteDTO alteracao) {
 
         Cliente clienteConsultado = manager.find(Cliente.class, cpf);
@@ -42,11 +42,9 @@ public class ClienteService implements IClienteService {
         }
 
         BeanUtils.copyProperties(alteracao, clienteConsultado);
-
-        manager.getTransaction().begin();
+   
         manager.merge(clienteConsultado);
-        manager.getTransaction().commit();
-
+   
         return new MensagemDTO("Cliente alterado com sucesso!");
     }
 
@@ -71,18 +69,17 @@ public class ClienteService implements IClienteService {
         return clienteConsultado;
     }
 
+    @Transactional
     public MensagemDTO excluirCliente(String cpf) {
         Cliente clienteARemover = manager.find(Cliente.class, cpf);
 
-        if (clienteARemover.equals(null)) {
+        if (clienteARemover == null) {
             return new MensagemDTO(
                     "Operação não realizada, cliente com CPF digitado não encontrado!");
         }
         
-        manager.getTransaction().begin();
         manager.remove(clienteARemover);
-        manager.getTransaction().commit();
-
+        
         return new MensagemDTO("Cliente excluído com sucesso!");
     }
 
